@@ -1,3 +1,4 @@
+
 import styled from "styled-components";
 
 import NewlineToBreak from "./NewLineToBreak";
@@ -23,23 +24,23 @@ export const ConfirmDrawingDialog = ({
   return (
     <Dialog show={show}>
       <ConfirmDrawingDialogContent>
-        <h1>Are you finished with your drawing?</h1>
+        <h1>Terminou seu desenho?</h1>
         <Text className="ConfirmDrawingDialogContent-text">
           {NewlineToBreak(text)}
         </Text>
         <div>
-          <img src={drawingDataUrl} alt="Drawing" />
+          <img src={drawingDataUrl} alt="Desenho" />
         </div>
         <div className="buttons">
           <button type="button" className="button" onClick={handleDone}>
-            Yes, I'm done
+            Sim, terminei!
           </button>
           <button
             type="button"
             className="button button-red"
             onClick={handleContinue}
           >
-            No, continue drawing
+            Não, continuar desenhando
           </button>
         </div>
       </ConfirmDrawingDialogContent>
@@ -90,16 +91,16 @@ export const DrawHelpDialog = ({
         <div className="DrawHelp">
           <div>
             <div className="small">
-              Round {round} of {rounds}
+              Rodada {round} de {rounds}
             </div>
             <h1>
-              <img src={drawImg} alt="Draw" />
+              <img src={drawImg} alt="Desenhar" />
             </h1>
-            <div>... this text by {textWriter.name}:</div>
+            <div>... o texto de {textWriter.name}:</div>
           </div>
           <Text>{NewlineToBreak(text)}</Text>
           <button type="button" className="button" onClick={handleClose}>
-            Okay, {firstShow ? "start" : "continue"} drawing
+            {firstShow ? "Começar a desenhar" : "Continuar desenhando"}
           </button>
         </div>
       </Scrollable>

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -43,7 +44,7 @@ export const Create = () => {
 
       navigate(`/g/${gameId}`);
     } catch (e) {
-      console.log("Error creating game", e);
+      console.log("Erro ao criar sala", e);
       setError(true);
     }
   };
@@ -54,7 +55,7 @@ export const Create = () => {
         show={error}
         handleReconnect={() => setError(false)}
       />
-      <CreateOrJoin buttonLabel="Create game" handleDone={handleDone} />
+      <CreateOrJoin buttonLabel="Criar sala" handleDone={handleDone} />
     </>
   );
 };
@@ -64,7 +65,7 @@ export const Join = ({
 }: {
   handleDone: (face: string, name: string) => void;
 }) => {
-  return <CreateOrJoin buttonLabel="Join game" handleDone={handleDone} />;
+  return <CreateOrJoin buttonLabel="Entrar na sala" handleDone={handleDone} />;
 };
 
 const CreateOrJoin = ({
@@ -95,7 +96,7 @@ const CreateOrJoin = ({
 
   return (
     <LogoLeftScreen>
-      Pick your look:
+      Escolha seu avatar:
       <br />
       <SelectFace face={face} faces={faces} handleChange={handleChangeFace} />
       <form
@@ -104,7 +105,7 @@ const CreateOrJoin = ({
           handleDone(face, name.trim());
         }}
       >
-        <label htmlFor="name">Enter your name:</label>
+        <label htmlFor="name">Digite seu nome:</label>
         <input
           type="text"
           id="name"
@@ -184,7 +185,7 @@ export const JoinWithCode = () => {
           handleJoin();
         }}
       >
-        <label htmlFor="code">Enter Game Code:</label>
+        <label htmlFor="code">Digite o código da sala:</label>
         <input
           type="text"
           id="code"
@@ -205,9 +206,9 @@ export const JoinWithCode = () => {
           type="submit"
           className="button"
           disabled={buttonDisabled}
-          title={buttonDisabled ? "Game code should have five characters" : ""}
+          title={buttonDisabled ? "O código deve conter 5 caracteres" : ""}
         >
-          Join game
+          Entrar na sala
         </button>
       </form>
     </LogoLeftScreen>

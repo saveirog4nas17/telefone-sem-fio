@@ -1,3 +1,4 @@
+
 import React from "react";
 
 import { useWindowSize } from "./helpers";
@@ -70,7 +71,11 @@ const DrawTools = ({
   return (
     <div className="Draw-tools">
       <div className="tool-button tool-button-help" onClick={triggerHelp}>
-        <img src={helpImg} alt="Help" title="Help (Show text to draw)" />
+        <img
+          src={helpImg}
+          alt="Ajuda"
+          title="Ajuda (mostrar o texto para desenhar)"
+        />
       </div>
       <BrushButton
         size={selectedBrush.displaySize}
@@ -97,13 +102,21 @@ const DrawTools = ({
           className="tool-color-selectedcolor"
           style={{ backgroundColor: color }}
         ></div>
-        <img src={colorwheelImg} alt="Pick color" title="Pick color" />
+        <img
+          src={colorwheelImg}
+          alt="Escolher cor"
+          title="Escolher cor"
+        />
       </div>
       <Dialog show={showColorPicker}>
         <ColorPicker handlePickColor={handlePickColor} />
       </Dialog>
       <div className="tool-button tool-button-done" onClick={onDone}>
-        <img src={checkImg} alt="Done" title="Done" />
+        <img
+          src={checkImg}
+          alt="Concluir desenho"
+          title="Concluir desenho"
+        />
       </div>
     </div>
   );

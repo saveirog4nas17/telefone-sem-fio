@@ -1,3 +1,4 @@
+
 import React from "react";
 
 import { isBlank } from "./helpers";
@@ -32,15 +33,15 @@ const Type = ({
       <div className="Type">
         <div>
           <div className="small">
-            Round {round} of {rounds}
+            Rodada {round} de {rounds}
           </div>
           <h1>
-            <img src={typeImg} alt="Type" />
+            <img src={typeImg} alt="Escrever" />
           </h1>
           <div>
             {first
-              ? "... a sentence or short story:"
-              : "... what you see on the drawing below:"}
+              ? "... uma frase ou uma pequena história:"
+              : "... o que você vê no desenho abaixo:"}
           </div>
         </div>
         <textarea
@@ -50,13 +51,13 @@ const Type = ({
         />
         {first && (
           <div className="small">
-            The next player will have to draw your text.
+            O próximo jogador terá que desenhar o que você escreveu.
           </div>
         )}
         {!first && (
           <div>
-            Art by {artist!.name}:
-            <img src={drawingSrc!} className="Drawing" alt="Drawing" />
+            Desenho de {artist!.name}:
+            <img src={drawingSrc!} className="Drawing" alt="Desenho" />
           </div>
         )}
         <button
@@ -65,7 +66,7 @@ const Type = ({
           disabled={buttonDisabled}
           onClick={() => handleDone(text.trim())}
         >
-          Done
+          Concluir
         </button>
       </div>
     </Scrollable>

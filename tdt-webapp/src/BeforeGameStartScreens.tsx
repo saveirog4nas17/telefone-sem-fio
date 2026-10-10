@@ -1,3 +1,4 @@
+
 import React from "react";
 
 import type { PlayerInfo } from "./model";
@@ -22,13 +23,13 @@ export const WaitForPlayersScreen = ({
   return (
     <BeforeGameStartScreen players={players}>
       <Logo />
-      <div>Ask your friends to join the game:</div>
+      <div>Convide seus amigos para entrar na sala:</div>
       <div>
-        <div className="field-label">Game Code:</div>
+        <div className="field-label">Código da sala:</div>
         <div className="field">{gameId}</div>
       </div>
       <div>
-        <div className="field-label">Link:</div>
+        <div className="field-label">Link de convite:</div>
         <div className="field">{link}</div>
       </div>
       <div className="buttons">
@@ -38,18 +39,18 @@ export const WaitForPlayersScreen = ({
           disabled={buttonDisabled}
           title={
             buttonDisabled
-              ? "Waiting for more players"
-              : "Let's get this party started!"
+              ? "Aguardando mais jogadores"
+              : "Tudo pronto! Vamos começar!"
           }
           onClick={handleStart}
         >
-          Start Game
+          Iniciar partida
         </button>
       </div>
       <div className="small">
-        Minimum number of players: 3. The more the merrier!
+        Número mínimo de jogadores: 3. Quanto mais gente, mais diversão!
         <br />
-        Once the game has started, no additional players can join.
+        Depois que a partida começar, novos jogadores não poderão entrar.
       </div>
     </BeforeGameStartScreen>
   );
@@ -64,7 +65,7 @@ export const WaitForGameStartScreen = ({
 
   return (
     <BeforeGameStartScreen players={players}>
-      <div>Waiting for {creator.name} to start game.</div>
+      <div>Aguardando {creator.name} iniciar a partida.</div>
     </BeforeGameStartScreen>
   );
 };
@@ -79,7 +80,7 @@ const BeforeGameStartScreen = ({
   return (
     <div className="BeforeGameStartScreen">
       <div className="BeforeGameStartScreen-left">
-        <div className="Players-title">Players:</div>
+        <div className="Players-title">Jogadores:</div>
         <div className="Players">
           {players.map((player, index) => (
             // eslint-disable-next-line @eslint-react/no-array-index-key -- PlayerInfo has no unique id

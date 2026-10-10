@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 
@@ -24,14 +25,14 @@ const Home = () => {
         <HowToButtonAndDialog />
         <br />
         <button type="button" className="button" onClick={handleStartNewGame}>
-          Start new Game
+          Criar sala
         </button>
         <button
           type="button"
           className="button button-blue"
           onClick={handleJoinGame}
         >
-          Join Game
+          Entrar na sala
         </button>
       </Buttons>
     </BigLogoScreen>

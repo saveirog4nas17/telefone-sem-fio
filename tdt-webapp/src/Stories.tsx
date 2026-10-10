@@ -1,3 +1,4 @@
+
 import React from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
@@ -37,12 +38,12 @@ const Stories = ({ stories }: { stories: StoryContent[] }) => {
     <Scrollable ref={scrollableRef}>
       {navButtons}
       <h1>
-        Story {selectedStory + 1} of {stories.length}
+        História {selectedStory + 1} de {stories.length}
       </h1>
       <Story story={stories[selectedStory]} />
       {navButtons}
       <StartNewButton className="button button-red" onClick={handleNewGame}>
-        Start a new game
+        Iniciar nova partida
       </StartNewButton>
     </Scrollable>
   );
@@ -75,7 +76,9 @@ const StoryElementComponent = ({ element }: { element: StoryElement }) => {
   if (element.type === "text") {
     return (
       <TextStoryElement>
-        <Player face={element.player.face}>{element.player.name} typed:</Player>
+        <Player face={element.player.face}>
+          {element.player.name} escreveu:
+        </Player>
         <div className="field">{NewlineToBreak(element.content)}</div>
       </TextStoryElement>
     );
@@ -83,9 +86,9 @@ const StoryElementComponent = ({ element }: { element: StoryElement }) => {
     return (
       <ImageStoryElement>
         <Player face={element.player.face}>
-          {element.player.name} painted:
+          {element.player.name} desenhou:
         </Player>
-        <img src={element.content} alt="Drawing" />
+        <img src={element.content} alt="Desenho" />
       </ImageStoryElement>
     );
   }
@@ -118,6 +121,7 @@ const NavButtons = styled.div`
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
+
   .button {
     margin: 2vmin;
   }

@@ -1,3 +1,4 @@
+
 import React from "react";
 import styled from "styled-components";
 
@@ -19,10 +20,10 @@ const BigLogoScreen = ({ children }: { children: React.ReactNode }) => {
       </BigLogoScreenContent>
       <Footer>
         <div>
-          <a href="https://github.com/Bronkoknorb/type-draw-type-game">
-            Open Source
+          <a href="https://github.com/saveirog4nas17/telefone-sem-fio">
+            Código aberto
           </a>{" "}
-          by Hermann Czedik-Eysenberg
+          fork by Saveiro
         </div>
       </Footer>
     </StyledBigLogoScreen>
