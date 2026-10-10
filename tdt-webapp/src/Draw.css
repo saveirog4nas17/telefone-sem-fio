@@ -1,123 +1,236 @@
+
+/* =========================================
+   AREA PRINCIPAL DO EDITOR
+========================================= */
+
 .Draw {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
+/* =========================================
+   BARRA LATERAL DE FERRAMENTAS
+========================================= */
+
 .Draw-tools {
-  flex-grow: 1;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
+
+  gap: 0.8vmin;
+  width: 11vmin;
+  min-width: 52px;
+
+  height: 100%;
+  max-height: 100dvh;
+  min-height: 0;
+
+  padding: 1vmin 0.5vmin;
+  box-sizing: border-box;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  scrollbar-width: thin;
 }
 
-.Draw-tools .tool-color {
-  margin: 2vmin;
-}
-
-.Draw-tools > .tool-button {
-  margin: 2vmin;
-}
-
-.Draw-tools .tool-button-done {
-  margin: 2vmin;
-  margin-top: 5vmin;
-}
-
-.Draw-canvas {
-  flex-grow: 1;
-}
-
-.Draw-canvas canvas {
-  touch-action: none;
-  display: block;
-  max-width: 100%;
-  max-height: 100vh;
-  cursor: crosshair;
-  border-radius: 2vmin;
-}
+/* =========================================
+   BOTOES DAS FERRAMENTAS
+========================================= */
 
 .tool-button {
   background-color: rgb(40, 27, 219);
   border: none;
   color: white;
+
   text-align: center;
   text-decoration: none;
-  display: inline-block;
+
   border-radius: 50%;
-  font-size: 0.7em;
-  box-shadow: 0.5vmin 0.7vmin 1vmin rgba(0, 0, 0, 0.2);
+
+  box-shadow: 0.3vmin 0.4vmin 0.7vmin
+    rgba(0, 0, 0, 0.2);
+
   cursor: pointer;
   outline: none;
-  width: 15vmin;
-  height: 15vmin;
+
+  width: 8vmin;
+  height: 8vmin;
+
+  min-width: 32px;
+  min-height: 32px;
+
+  padding: 0;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
+  flex-shrink: 0;
+
+  font-size: 1em;
 }
+
+/* Remove as margens antigas */
+
+.Draw-tools > .tool-button,
+.Draw-tools .tool-color,
+.Draw-tools .tool-button-done {
+  margin: 0;
+}
+
+/* Botao de ajuda */
 
 .tool-button-help {
   background-color: #b00;
 }
 
+/* Botao de concluir */
+
 .tool-button-done {
   background-color: #4caf50;
 }
 
+/* Botoes desabilitados */
+
+.tool-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Icones internos */
+
 .tool-button img {
-  width: 7vmin;
-  height: 7vmin;
+  width: 4.5vmin;
+  height: 4.5vmin;
+
+  max-width: 70%;
+  max-height: 70%;
+
+  object-fit: contain;
   filter: invert();
 }
 
+/* =========================================
+   SELETOR DE PINCEL
+========================================= */
+
 .tool-button-brush {
   cursor: pointer;
-  margin: 1vmin;
+  margin: 0;
 }
 
 .tool-button-brush > div {
   background-color: black;
   border-radius: 50%;
+  max-width: 90%;
+  max-height: 90%;
 }
+
+/* Popup dos tamanhos de pincel */
 
 .tool-popup {
   position: absolute;
+  z-index: 20;
+
   margin-left: 2vmin;
   padding: 1vmin;
-  border-radius: 4vmin;
-  background-color: rgba(0, 0, 0, 0.7);
+
+  border-radius: 2vmin;
+
+  background-color: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(5px);
+
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+
+  gap: 0.5vmin;
+  max-width: 40vmin;
 }
 
+.tool-popup .tool-button {
+  margin: 0.5vmin;
+}
+
+/* =========================================
+   SELETOR DE CORES
+========================================= */
+
 .tool-color {
-  width: 15vmin;
-  height: 15vmin;
+  width: 8vmin;
+  height: 8vmin;
+
+  min-width: 32px;
+  min-height: 32px;
+
   position: relative;
   border-radius: 50%;
-  box-shadow: 0.5vmin 0.7vmin 1vmin rgba(0, 0, 0, 0.2);
+
+  box-shadow: 0.3vmin 0.4vmin 0.7vmin
+    rgba(0, 0, 0, 0.2);
+
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .tool-color .tool-color-selectedcolor {
   position: absolute;
-  width: 13vmin;
-  height: 13vmin;
-  left: 1vmin;
-  top: 1vmin;
+
+  width: 86%;
+  height: 86%;
+
+  left: 7%;
+  top: 7%;
+
   border-radius: 50%;
   z-index: -1;
 }
 
 .tool-color img {
-  width: 15vmin;
-  height: 15vmin;
+  width: 100%;
+  height: 100%;
 }
+
+/* =========================================
+   CANVAS
+========================================= */
+
+.Draw-canvas {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.Draw-canvas canvas {
+  touch-action: none;
+  display: block;
+
+  max-width: 100%;
+  max-height: 100dvh;
+
+  width: auto;
+  height: auto;
+
+  cursor: crosshair;
+  border-radius: 2vmin;
+}
+
+/* =========================================
+   PALETA DE CORES
+========================================= */
 
 .ColorPicker {
   width: 100%;
@@ -136,8 +249,13 @@
   cursor: pointer;
 }
 
+/* =========================================
+   TELA DE AJUDA
+========================================= */
+
 .DrawHelp {
   min-height: 100%;
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -147,4 +265,32 @@
 .DrawHelp h1 img {
   height: 14vmin;
   margin-top: 2.3vmin;
+}
+
+/* =========================================
+   TELAS PEQUENAS
+========================================= */
+
+@media (max-height: 600px) {
+  .Draw-tools {
+    gap: 3px;
+    padding: 4px 2px;
+  }
+
+  .tool-button,
+  .tool-color {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+  }
+
+  .tool-button img {
+    width: 21px;
+    height: 21px;
+  }
+
+  .Draw-tools > button.tool-button {
+    font-size: 20px !important;
+  }
 }

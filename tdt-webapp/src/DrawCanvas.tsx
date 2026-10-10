@@ -1,26 +1,89 @@
+
 import React from "react";
 import { useWindowSize, getCanvasSize } from "./helpers";
 
 export interface ImageProvider {
   getImageDataURL: () => string;
+  undo: () => void;
+  redo: () => void;
 }
 
-// gets position in "natural" canvas coordinates for mouse/touch events
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface Stroke {
+  points: Point[];
+  color: string;
+  size: number;
+}
+
+const MAX_UNDO = 20;
+
 function getPositionInCanvas(
   canvas: HTMLCanvasElement,
   event: { clientX: number; clientY: number },
-) {
+): Point {
   const rect = canvas.getBoundingClientRect();
-
   const canvasSize = getCanvasSize(canvas);
 
   const scaleX = canvas.width / canvasSize.width;
   const scaleY = canvas.height / canvasSize.height;
 
-  const x = (event.clientX - rect.left - canvasSize.x) * scaleX;
-  const y = (event.clientY - rect.top - canvasSize.y) * scaleY;
+  return {
+    x: (event.clientX - rect.left - canvasSize.x) * scaleX,
+    y: (event.clientY - rect.top - canvasSize.y) * scaleY,
+  };
+}
 
-  return { x, y };
+function drawDot(
+  ctx: CanvasRenderingContext2D,
+  point: Point,
+  color: string,
+  size: number,
+) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(point.x, point.y, size / 2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawSegment(
+  ctx: CanvasRenderingContext2D,
+  from: Point,
+  to: Point,
+  color: string,
+  size: number,
+) {
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = size;
+  ctx.strokeStyle = color;
+
+  ctx.beginPath();
+  ctx.moveTo(from.x, from.y);
+  ctx.lineTo(to.x, to.y);
+  ctx.stroke();
+}
+
+function drawStroke(
+  ctx: CanvasRenderingContext2D,
+  stroke: Stroke,
+) {
+  if (stroke.points.length === 0) return;
+
+  drawDot(ctx, stroke.points[0], stroke.color, stroke.size);
+
+  for (let i = 1; i < stroke.points.length; i++) {
+    drawSegment(
+      ctx,
+      stroke.points[i - 1],
+      stroke.points[i],
+      stroke.color,
+      stroke.size,
+    );
+  }
 }
 
 const DrawCanvas = ({
@@ -28,141 +91,220 @@ const DrawCanvas = ({
   brushPixelSize,
   imageProviderRef,
   handleScaleChange,
+  onHistoryChange,
 }: {
   color: string;
   brushPixelSize: number;
   imageProviderRef: React.MutableRefObject<ImageProvider | null>;
   handleScaleChange: (scale: number) => void;
+  onHistoryChange: (canUndo: boolean, canRedo: boolean) => void;
 }) => {
-  const [canvas, setCanvas] = React.useState<HTMLCanvasElement | null>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
-  const canvasRefCallback = React.useCallback(
-    (canvasElement: HTMLCanvasElement | null) => {
-      if (canvasElement !== null) {
-        setCanvas(canvasElement);
-        imageProviderRef.current = {
-          getImageDataURL: () => canvasElement.toDataURL("image/png"),
-        };
-      }
-    },
-    [imageProviderRef],
-  );
+  const strokesRef = React.useRef<Stroke[]>([]);
+  const redoRef = React.useRef<Stroke[]>([]);
+  const undoFloorRef = React.useRef(0);
+
+  const currentStrokeRef = React.useRef<Stroke | null>(null);
+  const activePointerRef = React.useRef<number | null>(null);
 
   const windowSize = useWindowSize();
 
-  React.useEffect(() => {
-    if (canvas !== null) {
-      const canvasSize = getCanvasSize(canvas);
-      const scale = canvasSize.width / canvas.width;
-      handleScaleChange(scale);
-    }
-  }, [canvas, windowSize, handleScaleChange]);
+  const notifyHistory = React.useCallback(() => {
+    onHistoryChange(
+      strokesRef.current.length > undoFloorRef.current,
+      redoRef.current.length > 0,
+    );
+  }, [onHistoryChange]);
 
-  const clearCanvas = () => {
-    if (canvas === null) return;
-    const ctx = getCanvas2DContext(canvas);
+  const renderCanvas = React.useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    strokesRef.current.forEach((stroke) => {
+      drawStroke(ctx, stroke);
+    });
+  }, []);
+
+  const undo = React.useCallback(() => {
+    if (currentStrokeRef.current) return;
+
+    if (strokesRef.current.length <= undoFloorRef.current) {
+      return;
+    }
+
+    const stroke = strokesRef.current.pop();
+    if (!stroke) return;
+
+    redoRef.current.push(stroke);
+
+    renderCanvas();
+    notifyHistory();
+  }, [renderCanvas, notifyHistory]);
+
+  const redo = React.useCallback(() => {
+    if (currentStrokeRef.current) return;
+
+    const stroke = redoRef.current.pop();
+    if (!stroke) return;
+
+    strokesRef.current.push(stroke);
+
+    renderCanvas();
+    notifyHistory();
+  }, [renderCanvas, notifyHistory]);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    renderCanvas();
+
+    imageProviderRef.current = {
+      getImageDataURL: () => canvas.toDataURL("image/png"),
+      undo,
+      redo,
+    };
+
+    notifyHistory();
+
+    return () => {
+      imageProviderRef.current = null;
+    };
+  }, [
+    imageProviderRef,
+    undo,
+    redo,
+    renderCanvas,
+    notifyHistory,
+  ]);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const canvasSize = getCanvasSize(canvas);
+    const scale = canvasSize.width / canvas.width;
+
+    handleScaleChange(scale);
+  }, [windowSize, handleScaleChange]);
+
+  const handlePointerDown = (
+    event: React.PointerEvent<HTMLCanvasElement>,
+  ) => {
+    if (activePointerRef.current !== null) return;
+
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+
+    const canvas = event.currentTarget;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const point = getPositionInCanvas(canvas, event);
+
+    currentStrokeRef.current = {
+      points: [point],
+      color,
+      size: brushPixelSize,
+    };
+
+    activePointerRef.current = event.pointerId;
+
+    canvas.setPointerCapture(event.pointerId);
+
+    drawDot(ctx, point, color, brushPixelSize);
   };
 
-  // initial clear
-  React.useEffect(clearCanvas, [canvas]);
+  const handlePointerMove = (
+    event: React.PointerEvent<HTMLCanvasElement>,
+  ) => {
+    if (activePointerRef.current !== event.pointerId) {
+      return;
+    }
 
-  //let pos: { x: number; y: number } | null = null;
-  const [pos, setPos] = React.useState<{ x: number; y: number } | null>(null);
+    const stroke = currentStrokeRef.current;
+    if (!stroke) return;
 
-  function paint_start(_: CanvasRenderingContext2D, x: number, y: number) {
-    setPos({ x, y });
-  }
-  function paint_move(ctx: CanvasRenderingContext2D, x: number, y: number) {
-    if (pos === null) {
-      paint_start(ctx, x, y);
-    }
-    ctx.lineCap = "round";
-    ctx.lineWidth = brushPixelSize;
-    ctx.strokeStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(pos!.x, pos!.y);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    setPos({ x, y });
-  }
-  function paint_end(
-    ctx: CanvasRenderingContext2D,
-    x: number | null = null,
-    y: number | null = null,
-  ) {
-    if (pos === null) {
-      return;
-    }
-    paint_move(ctx, x === null ? pos.x : x, y === null ? pos.y : y);
-    setPos(null);
-  }
+    const canvas = event.currentTarget;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-  const handleMouseDown = (
-    event: React.MouseEvent<HTMLCanvasElement, MouseEvent>,
+    const point = getPositionInCanvas(canvas, event);
+    const previousPoint = stroke.points[stroke.points.length - 1];
+
+    drawSegment(
+      ctx,
+      previousPoint,
+      point,
+      stroke.color,
+      stroke.size,
+    );
+
+    stroke.points.push(point);
+  };
+
+  const finishStroke = (
+    event: React.PointerEvent<HTMLCanvasElement>,
+    cancelled = false,
   ) => {
-    if (event.buttons !== 1) {
+    if (activePointerRef.current !== event.pointerId) {
       return;
     }
-    const canvasTarget = event.currentTarget;
-    const { x, y } = getPositionInCanvas(canvasTarget, event);
-    const ctx = getCanvas2DContext(canvasTarget);
-    paint_start(ctx, x, y);
-  };
-  const handleMouseMove = (
-    event: React.MouseEvent<HTMLCanvasElement, MouseEvent>,
-  ) => {
-    const canvasTarget = event.currentTarget;
-    const { x, y } = getPositionInCanvas(canvasTarget, event);
-    const ctx = getCanvas2DContext(canvasTarget);
-    if (event.buttons !== 1) {
-      paint_end(ctx);
-      return;
+
+    const canvas = event.currentTarget;
+    const stroke = currentStrokeRef.current;
+
+    if (!cancelled && stroke) {
+      const ctx = canvas.getContext("2d");
+
+      if (ctx) {
+        const point = getPositionInCanvas(canvas, event);
+        const previousPoint = stroke.points[stroke.points.length - 1];
+
+        if (
+          point.x !== previousPoint.x ||
+          point.y !== previousPoint.y
+        ) {
+          drawSegment(
+            ctx,
+            previousPoint,
+            point,
+            stroke.color,
+            stroke.size,
+          );
+          stroke.points.push(point);
+        }
+      }
     }
-    paint_move(ctx, x, y);
-  };
-  const handleMouseUp = (
-    event: React.MouseEvent<HTMLCanvasElement, MouseEvent>,
-  ) => {
-    const canvasTarget = event.currentTarget;
-    const ctx = getCanvas2DContext(canvasTarget);
-    paint_end(ctx);
-  };
-  const handleMouseOut = (
-    event: React.MouseEvent<HTMLCanvasElement, MouseEvent>,
-  ) => {
-    const canvasTarget = event.currentTarget;
-    const ctx = getCanvas2DContext(canvasTarget);
-    const { x, y } = getPositionInCanvas(canvasTarget, event);
-    paint_end(ctx, x, y);
-  };
-  const handleTouchStart = (event: React.TouchEvent<HTMLCanvasElement>) => {
-    event.preventDefault();
-    if (event.touches.length !== 1) {
-      return;
+
+    activePointerRef.current = null;
+    currentStrokeRef.current = null;
+
+    if (canvas.hasPointerCapture(event.pointerId)) {
+      canvas.releasePointerCapture(event.pointerId);
     }
-    const canvasTarget = event.currentTarget;
-    const { x, y } = getPositionInCanvas(canvasTarget, event.touches[0]);
-    const ctx = getCanvas2DContext(canvasTarget);
-    paint_start(ctx, x, y);
-  };
-  const handleTouchMove = (event: React.TouchEvent<HTMLCanvasElement>) => {
-    event.preventDefault();
-    const canvasTarget = event.currentTarget;
-    const ctx = getCanvas2DContext(canvasTarget);
-    if (event.touches.length !== 1) {
-      paint_end(ctx);
-      return;
+
+    if (!cancelled && stroke && stroke.points.length > 0) {
+      strokesRef.current.push(stroke);
+      redoRef.current = [];
+
+      undoFloorRef.current = Math.max(
+        undoFloorRef.current,
+        strokesRef.current.length - MAX_UNDO,
+      );
+
+      notifyHistory();
+    } else {
+      renderCanvas();
     }
-    const { x, y } = getPositionInCanvas(canvasTarget, event.touches[0]);
-    paint_move(ctx, x, y);
-  };
-  const handleTouchEnd = (event: React.TouchEvent<HTMLCanvasElement>) => {
-    event.preventDefault();
-    const canvasTarget = event.currentTarget;
-    const ctx = getCanvas2DContext(canvasTarget);
-    paint_end(ctx);
   };
 
   return (
@@ -170,23 +312,15 @@ const DrawCanvas = ({
       <canvas
         width="1440"
         height="1080"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseOut={handleMouseOut}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        ref={canvasRefCallback}
-      ></canvas>
+        ref={canvasRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={(event) => finishStroke(event)}
+        onPointerCancel={(event) => finishStroke(event, true)}
+        style={{ touchAction: "none" }}
+      />
     </div>
   );
 };
 
 export default DrawCanvas;
-
-function getCanvas2DContext(
-  canvas: HTMLCanvasElement,
-): CanvasRenderingContext2D {
-  return canvas.getContext("2d")!;
-}
