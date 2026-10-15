@@ -1,3 +1,4 @@
+
 import styled from "styled-components";
 
 import Dialog from "./Dialog";
@@ -25,10 +26,10 @@ export const ConnectionLostErrorDialog = ({
     <Dialog show={show} highPriority={true}>
       <ConnectionLostErrorDialogContent>
         <div></div>
-        <h1>ERROR</h1>
-        <div>Connection to server lost</div>
+        <h1>ERRO</h1>
+        <div>Conexão com o servidor perdida.</div>
         <button type="button" className="button" onClick={handleReconnect}>
-          Click to re-connect
+          Tentar reconectar
         </button>
       </ConnectionLostErrorDialogContent>
     </Dialog>

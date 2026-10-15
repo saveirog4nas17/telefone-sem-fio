@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useParams } from "react-router-dom";
 
@@ -241,15 +242,15 @@ const Game = () => {
     } else if (playerState.state === "alreadyStartedGame") {
       return (
         <Message>
-          Sorry, the game has already started. You will see the created stories,
-          once that game is finished.
+          Desculpe, esta partida já começou. Você poderá visualizar as histórias
+          quando a partida terminar.
         </Message>
       );
     } else {
       // unknown game
       return (
         <Message>
-          Sorry, the game code <em>{gameIdNotNull}</em> was not found.
+          Desculpe, a sala com o código <em>{gameIdNotNull}</em> não foi encontrada.
         </Message>
       );
     }
@@ -280,13 +281,13 @@ const WaitForRoundFinished = ({
   isTypeRound: boolean;
   waitingForPlayers: PlayerInfo[];
 }) => {
-  const roundAction = isTypeRound ? "typing" : "drawing";
+  const roundAction = isTypeRound ? "escrever" : "desenhar";
 
   const waitingForPlayersText = waitingForPlayers.map((p) => p.name).join(", ");
 
   return (
     <Message>
-      {`Waiting for other players to finish ${roundAction}:`}
+      {`Aguardando os outros jogadores terminarem de ${roundAction}:`}
       <br />
       {waitingForPlayersText}
     </Message>
@@ -310,5 +311,5 @@ const Message = ({ children }: { children: React.ReactNode }) => {
 };
 
 const LoadingGame = () => {
-  return <div>Loading game...</div>;
+  return <div>Carregando partida...</div>;
 };

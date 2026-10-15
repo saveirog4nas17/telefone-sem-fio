@@ -1,3 +1,4 @@
+
 import React from "react";
 import styled from "styled-components";
 import { useWindowSize } from "./helpers";
@@ -166,10 +167,10 @@ const GameFinishedAnimation = ({
   return (
     <StyledGameFinishedAnimation onClick={handleClick}>
       <canvas width="100" height="100" ref={canvasRef}></canvas>
-      <div>Done!</div>
+      <div>Partida concluída!</div>
       <div>
         <button type="button" className="button" onClick={handleShowStories}>
-          See finished stories
+          Ver histórias da partida
         </button>
       </div>
     </StyledGameFinishedAnimation>

@@ -1,5 +1,9 @@
+
 {
-  "name": "Type Draw Type",
+  "name": "Telefone Sem Fio",
+  "short_name": "Telefone Sem Fio",
+  "description": "Jogo online de telefone sem fio com desenhos e frases para jogar com amigos.",
+  "lang": "pt-BR",
   "icons": [
     {
       "src": "favicon.ico",
