@@ -24,6 +24,8 @@ const DrawTools = ({
   canUndo,
   canRedo,
   onDone,
+  isFill,
+  onToggleFill,
   isEraser,
   onToggleEraser,
 }: {
@@ -39,6 +41,8 @@ const DrawTools = ({
   canRedo: boolean;
   onClear: () => void;
   onDone: () => void;
+  isFill: boolean;
+  onToggleFill: () => void;
   isEraser: boolean;
   onToggleEraser: () => void;
 }) => {
@@ -152,6 +156,42 @@ const DrawTools = ({
       >
         {isEraser ? "✏️" : "🧽"}
 </button>
+
+
+      <button
+        type="button"
+        className="tool-button"
+        onClick={onToggleFill}
+        title={isFill ? "Voltar ao pincel" : "Preencher com cor"}
+        aria-label={isFill ? "Desativar balde" : "Balde de tinta"}
+        aria-pressed={isFill}
+        style={{
+          backgroundColor: isFill ? "#dceaff" : "#281bdb",
+          color: isFill ? "#281bdb" : "#ffffff",
+          border: isFill ? "0.4vmin solid #4287f5" : "none",
+          fontSize: "clamp(18px, 2.5vmin, 28px)",
+          cursor: "pointer",
+        }}
+      >
+        <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="28"
+    height="28"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="white"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ width: "55%", height: "55%" }}
+  >
+    <path d="m2 12 10-10 9 9-10 10z" />
+    <path d="m7 7 10 10" />
+    <path d="M2 17h19" />
+    <path d="M19 19c0 1.1.9 2 2 2s2-.9 2-2-2-3-2-3-2 1.9-2 3z" />
+  </svg>
+      </button>
+
 
       <button
         type="button"

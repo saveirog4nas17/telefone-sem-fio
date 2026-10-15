@@ -35,7 +35,9 @@ const Draw = ({
   const [firstTimeHelpDialog, setFirstTimeHelpDialog] = React.useState(true);
 
   const [color, setColor] = React.useState("#000");
+
   const [isEraser, setIsEraser] = React.useState(false);
+  const [isFill, setIsFill] = React.useState(false);
 
   const activeColor = isEraser ? "#FFFFFF" : color;
   
@@ -138,28 +140,39 @@ const Draw = ({
         handleClose={handleCloseHelpDialog}
       />
 
-      <DrawTools
-        color={activeColor}
-        brushes={brushes}
-        selectedBrush={selectedBrush}
-        triggerHelp={() => setShowHelpDialog(true)}
-        onSelectBrush={handleSelectBrush}
-        onChangeColor={(newColor) => {
-          setColor(newColor);
-          setIsEraser(false);
-        }}
-        isEraser={isEraser}
-        onToggleEraser={() => setIsEraser((previous) => !previous)}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        onClear={handleClear}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onDone={handleClickDone}
-      />
+
+        <DrawTools
+          color={activeColor}
+          brushes={brushes}
+          selectedBrush={selectedBrush}
+          triggerHelp={() => setShowHelpDialog(true)}
+          onSelectBrush={handleSelectBrush}
+          onChangeColor={(newColor) => {
+            setColor(newColor);
+            setIsEraser(false);
+          }}
+          isEraser={isEraser}
+          onToggleEraser={() => {
+            setIsEraser((previous) => !previous);
+            setIsFill(false);
+          }}
+          isFill={isFill}
+          onToggleFill={() => {
+            setIsFill((previous) => !previous);
+            setIsEraser(false);
+          }}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onClear={handleClear}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onDone={handleClickDone}
+        />
+
 
       <DrawCanvas
         color={activeColor}
+        fillMode={isFill}
         brushPixelSize={selectedBrush.pixelSize}
         imageProviderRef={imageProviderRef}
         handleScaleChange={handleScaleChange}

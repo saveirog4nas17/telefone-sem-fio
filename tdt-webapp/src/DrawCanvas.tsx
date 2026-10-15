@@ -22,9 +22,11 @@ interface Stroke {
 
 type HistoryAction =
   | { kind: "stroke"; stroke: Stroke }
-  | { kind: "clear" };
+  | { kind: "clear" }
+  | { kind: "fill"; point: Point; color: string };
 
 const MAX_UNDO = 20;
+const FILL_TOLERANCE = 32;
 
 function getPositionInCanvas(
   canvas: HTMLCanvasElement,
@@ -91,15 +93,142 @@ function drawStroke(
   }
 }
 
+function hexToRgb(hex: string) {
+  let value = hex.replace("#", "");
+
+  if (value.length === 3) {
+    value = value
+      .split("")
+      .map((char) => char + char)
+      .join("");
+  }
+
+  return {
+    r: parseInt(value.slice(0, 2), 16),
+    g: parseInt(value.slice(2, 4), 16),
+    b: parseInt(value.slice(4, 6), 16),
+  };
+}
+
+function floodFill(
+  canvas: HTMLCanvasElement,
+  point: Point,
+  hexColor: string,
+): boolean {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return false;
+
+  const width = canvas.width;
+  const height = canvas.height;
+
+  const startX = Math.floor(point.x);
+  const startY = Math.floor(point.y);
+
+  if (
+    startX < 0 ||
+    startY < 0 ||
+    startX >= width ||
+    startY >= height
+  ) {
+    return false;
+  }
+
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+
+  const targetIndex = (startY * width + startX) * 4;
+
+  const target = {
+    r: data[targetIndex],
+    g: data[targetIndex + 1],
+    b: data[targetIndex + 2],
+    a: data[targetIndex + 3],
+  };
+
+  const replacement = hexToRgb(hexColor);
+
+  if (
+    target.r === replacement.r &&
+    target.g === replacement.g &&
+    target.b === replacement.b &&
+    target.a === 255
+  ) {
+    return false;
+  }
+
+  const pixelCount = width * height;
+  const visited = new Uint8Array(pixelCount);
+  const queue = new Int32Array(pixelCount);
+
+  let head = 0;
+  let tail = 0;
+
+  const startPixel = startY * width + startX;
+
+  queue[tail++] = startPixel;
+  visited[startPixel] = 1;
+
+  const matchesTarget = (pixel: number) => {
+    const offset = pixel * 4;
+
+    return (
+      Math.abs(data[offset] - target.r) <= FILL_TOLERANCE &&
+      Math.abs(data[offset + 1] - target.g) <= FILL_TOLERANCE &&
+      Math.abs(data[offset + 2] - target.b) <= FILL_TOLERANCE &&
+      Math.abs(data[offset + 3] - target.a) <= FILL_TOLERANCE
+    );
+  };
+
+  const enqueue = (pixel: number) => {
+    if (visited[pixel]) return;
+
+    visited[pixel] = 1;
+    queue[tail++] = pixel;
+  };
+
+  let changed = false;
+
+  while (head < tail) {
+    const pixel = queue[head++];
+
+    if (!matchesTarget(pixel)) continue;
+
+    const offset = pixel * 4;
+
+    data[offset] = replacement.r;
+    data[offset + 1] = replacement.g;
+    data[offset + 2] = replacement.b;
+    data[offset + 3] = 255;
+
+    changed = true;
+
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+
+    if (x > 0) enqueue(pixel - 1);
+    if (x < width - 1) enqueue(pixel + 1);
+    if (y > 0) enqueue(pixel - width);
+    if (y < height - 1) enqueue(pixel + width);
+  }
+
+  if (changed) {
+    ctx.putImageData(imageData, 0, 0);
+  }
+
+  return changed;
+}
+
 const DrawCanvas = ({
   color,
   brushPixelSize,
+  fillMode,
   imageProviderRef,
   handleScaleChange,
   onHistoryChange,
 }: {
   color: string;
   brushPixelSize: number;
+  fillMode: boolean;
   imageProviderRef: React.MutableRefObject<ImageProvider | null>;
   handleScaleChange: (scale: number) => void;
   onHistoryChange: (canUndo: boolean, canRedo: boolean) => void;
@@ -129,23 +258,22 @@ const DrawCanvas = ({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Limpa o canvas para reconstruir o desenho.
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Reproduz todas as ações registradas.
     actionsRef.current.forEach((action) => {
       if (action.kind === "clear") {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-      } else {
+      } else if (action.kind === "stroke") {
         drawStroke(ctx, action.stroke);
+      } else if (action.kind === "fill") {
+        floodFill(canvas, action.point, action.color);
       }
     });
   }, []);
 
   const undo = React.useCallback(() => {
-    // Não permite desfazer enquanto estiver desenhando.
     if (currentStrokeRef.current) return;
 
     if (actionsRef.current.length <= undoFloorRef.current) {
@@ -176,13 +304,9 @@ const DrawCanvas = ({
   const clear = React.useCallback(() => {
     if (currentStrokeRef.current) return;
 
-    // Registra a limpeza como uma única ação.
     actionsRef.current.push({ kind: "clear" });
-
-    // Uma nova ação invalida o histórico de refazer.
     redoRef.current = [];
 
-    // Mantém as últimas 20 ações disponíveis para desfazer.
     undoFloorRef.current = Math.max(
       undoFloorRef.current,
       actionsRef.current.length - MAX_UNDO,
@@ -234,7 +358,6 @@ const DrawCanvas = ({
   ) => {
     if (activePointerRef.current !== null) return;
 
-    // Somente botão esquerdo do mouse.
     if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
@@ -244,6 +367,29 @@ const DrawCanvas = ({
     if (!ctx) return;
 
     const point = getPositionInCanvas(canvas, event);
+
+    if (fillMode) {
+      const changed = floodFill(canvas, point, color);
+
+      if (changed) {
+        actionsRef.current.push({
+          kind: "fill",
+          point,
+          color,
+        });
+
+        redoRef.current = [];
+
+        undoFloorRef.current = Math.max(
+          undoFloorRef.current,
+          actionsRef.current.length - MAX_UNDO,
+        );
+
+        notifyHistory();
+      }
+
+      return;
+    }
 
     currentStrokeRef.current = {
       points: [point],
@@ -255,7 +401,6 @@ const DrawCanvas = ({
 
     canvas.setPointerCapture(event.pointerId);
 
-    // Permite desenhar apenas clicando, sem arrastar.
     drawDot(ctx, point, color, brushPixelSize);
   };
 
@@ -276,7 +421,6 @@ const DrawCanvas = ({
     const point = getPositionInCanvas(canvas, event);
     const previousPoint = stroke.points[stroke.points.length - 1];
 
-    // Desenha incrementalmente para melhorar o desempenho.
     drawSegment(
       ctx,
       previousPoint,
@@ -304,7 +448,8 @@ const DrawCanvas = ({
 
       if (ctx) {
         const point = getPositionInCanvas(canvas, event);
-        const previousPoint = stroke.points[stroke.points.length - 1];
+        const previousPoint =
+          stroke.points[stroke.points.length - 1];
 
         if (
           point.x !== previousPoint.x ||
@@ -331,13 +476,11 @@ const DrawCanvas = ({
     }
 
     if (!cancelled && stroke && stroke.points.length > 0) {
-      // Cada traço completo é uma ação do histórico.
       actionsRef.current.push({
         kind: "stroke",
         stroke,
       });
 
-      // Descarta ações de refazer após um novo traço.
       redoRef.current = [];
 
       undoFloorRef.current = Math.max(
@@ -347,7 +490,6 @@ const DrawCanvas = ({
 
       notifyHistory();
     } else {
-      // Remove visualmente traços cancelados.
       renderCanvas();
     }
   };
@@ -362,7 +504,10 @@ const DrawCanvas = ({
         onPointerMove={handlePointerMove}
         onPointerUp={(event) => finishStroke(event)}
         onPointerCancel={(event) => finishStroke(event, true)}
-        style={{ touchAction: "none" }}
+        style={{
+          touchAction: "none",
+          cursor: fillMode ? "cell" : "crosshair",
+        }}
       />
     </div>
   );
