@@ -73,6 +73,16 @@ const Draw = ({
     imageProviderRef.current?.redo();
   };
 
+  const handleClear = () => {
+  const confirmed = window.confirm(
+    "Deseja apagar todo o desenho?\n\nVocê poderá recuperá-lo usando o botão Desfazer.",
+  );
+
+  if (confirmed) {
+    imageProviderRef.current?.clear();
+  }
+  };
+
   const [showConfirmDialog, setShowConfirmDialog] =
     React.useState(false);
 
@@ -142,6 +152,7 @@ const Draw = ({
         onToggleEraser={() => setIsEraser((previous) => !previous)}
         onUndo={handleUndo}
         onRedo={handleRedo}
+        onClear={handleClear}
         canUndo={canUndo}
         canRedo={canRedo}
         onDone={handleClickDone}

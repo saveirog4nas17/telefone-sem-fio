@@ -6,6 +6,7 @@ export interface ImageProvider {
   getImageDataURL: () => string;
   undo: () => void;
   redo: () => void;
+  clear: () => void;
 }
 
 interface Point {
@@ -18,6 +19,10 @@ interface Stroke {
   color: string;
   size: number;
 }
+
+type HistoryAction =
+  | { kind: "stroke"; stroke: Stroke }
+  | { kind: "clear" };
 
 const MAX_UNDO = 20;
 
@@ -101,8 +106,8 @@ const DrawCanvas = ({
 }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
-  const strokesRef = React.useRef<Stroke[]>([]);
-  const redoRef = React.useRef<Stroke[]>([]);
+  const actionsRef = React.useRef<HistoryAction[]>([]);
+  const redoRef = React.useRef<HistoryAction[]>([]);
   const undoFloorRef = React.useRef(0);
 
   const currentStrokeRef = React.useRef<Stroke | null>(null);
@@ -112,7 +117,7 @@ const DrawCanvas = ({
 
   const notifyHistory = React.useCallback(() => {
     onHistoryChange(
-      strokesRef.current.length > undoFloorRef.current,
+      actionsRef.current.length > undoFloorRef.current,
       redoRef.current.length > 0,
     );
   }, [onHistoryChange]);
@@ -124,25 +129,33 @@ const DrawCanvas = ({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Limpa o canvas para reconstruir o desenho.
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    strokesRef.current.forEach((stroke) => {
-      drawStroke(ctx, stroke);
+    // Reproduz todas as ações registradas.
+    actionsRef.current.forEach((action) => {
+      if (action.kind === "clear") {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else {
+        drawStroke(ctx, action.stroke);
+      }
     });
   }, []);
 
   const undo = React.useCallback(() => {
+    // Não permite desfazer enquanto estiver desenhando.
     if (currentStrokeRef.current) return;
 
-    if (strokesRef.current.length <= undoFloorRef.current) {
+    if (actionsRef.current.length <= undoFloorRef.current) {
       return;
     }
 
-    const stroke = strokesRef.current.pop();
-    if (!stroke) return;
+    const action = actionsRef.current.pop();
+    if (!action) return;
 
-    redoRef.current.push(stroke);
+    redoRef.current.push(action);
 
     renderCanvas();
     notifyHistory();
@@ -151,10 +164,29 @@ const DrawCanvas = ({
   const redo = React.useCallback(() => {
     if (currentStrokeRef.current) return;
 
-    const stroke = redoRef.current.pop();
-    if (!stroke) return;
+    const action = redoRef.current.pop();
+    if (!action) return;
 
-    strokesRef.current.push(stroke);
+    actionsRef.current.push(action);
+
+    renderCanvas();
+    notifyHistory();
+  }, [renderCanvas, notifyHistory]);
+
+  const clear = React.useCallback(() => {
+    if (currentStrokeRef.current) return;
+
+    // Registra a limpeza como uma única ação.
+    actionsRef.current.push({ kind: "clear" });
+
+    // Uma nova ação invalida o histórico de refazer.
+    redoRef.current = [];
+
+    // Mantém as últimas 20 ações disponíveis para desfazer.
+    undoFloorRef.current = Math.max(
+      undoFloorRef.current,
+      actionsRef.current.length - MAX_UNDO,
+    );
 
     renderCanvas();
     notifyHistory();
@@ -170,6 +202,7 @@ const DrawCanvas = ({
       getImageDataURL: () => canvas.toDataURL("image/png"),
       undo,
       redo,
+      clear,
     };
 
     notifyHistory();
@@ -181,6 +214,7 @@ const DrawCanvas = ({
     imageProviderRef,
     undo,
     redo,
+    clear,
     renderCanvas,
     notifyHistory,
   ]);
@@ -200,6 +234,7 @@ const DrawCanvas = ({
   ) => {
     if (activePointerRef.current !== null) return;
 
+    // Somente botão esquerdo do mouse.
     if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
@@ -220,6 +255,7 @@ const DrawCanvas = ({
 
     canvas.setPointerCapture(event.pointerId);
 
+    // Permite desenhar apenas clicando, sem arrastar.
     drawDot(ctx, point, color, brushPixelSize);
   };
 
@@ -240,6 +276,7 @@ const DrawCanvas = ({
     const point = getPositionInCanvas(canvas, event);
     const previousPoint = stroke.points[stroke.points.length - 1];
 
+    // Desenha incrementalmente para melhorar o desempenho.
     drawSegment(
       ctx,
       previousPoint,
@@ -280,6 +317,7 @@ const DrawCanvas = ({
             stroke.color,
             stroke.size,
           );
+
           stroke.points.push(point);
         }
       }
@@ -293,16 +331,23 @@ const DrawCanvas = ({
     }
 
     if (!cancelled && stroke && stroke.points.length > 0) {
-      strokesRef.current.push(stroke);
+      // Cada traço completo é uma ação do histórico.
+      actionsRef.current.push({
+        kind: "stroke",
+        stroke,
+      });
+
+      // Descarta ações de refazer após um novo traço.
       redoRef.current = [];
 
       undoFloorRef.current = Math.max(
         undoFloorRef.current,
-        strokesRef.current.length - MAX_UNDO,
+        actionsRef.current.length - MAX_UNDO,
       );
 
       notifyHistory();
     } else {
+      // Remove visualmente traços cancelados.
       renderCanvas();
     }
   };

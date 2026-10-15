@@ -20,6 +20,7 @@ const DrawTools = ({
   onChangeColor,
   onUndo,
   onRedo,
+  onClear,
   canUndo,
   canRedo,
   onDone,
@@ -36,6 +37,7 @@ const DrawTools = ({
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onClear: () => void;
   onDone: () => void;
   isEraser: boolean;
   onToggleEraser: () => void;
@@ -184,6 +186,23 @@ const DrawTools = ({
       >
         ↷
       </button>
+
+      
+      <button
+        type="button"
+        className="tool-button"
+        onClick={onClear}
+        title="Limpar todo o desenho"
+        aria-label="Limpar desenho"
+        style={{
+          backgroundColor: "#dc2626",
+          fontSize: "clamp(18px, 2.5vmin, 28px)",
+          cursor: "pointer",
+        }}
+      >
+        🗑
+      </button>
+
 
       <div
         className="tool-button tool-button-done"
